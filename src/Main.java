@@ -1,6 +1,8 @@
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.Scanner;
 
 public class Main {
@@ -9,6 +11,8 @@ public class Main {
     static String fileName;
     static String cwd = new String(System.getProperty("user.dir") + '/');
     static HashMap<Character , Integer> freq = new HashMap<Character, Integer>();
+    static HashMap<Character , String> id = new HashMap<Character, String>();
+
 
     static boolean isTxtFile()
     {
@@ -21,6 +25,40 @@ public class Main {
             idx++;
         }
         return true;
+    }
+
+    public static HuffTree builtTree()
+    {
+        PriorityQueue minHeap= new PriorityQueue(Comparator.reverseOrder());
+
+        for(Character c : freq.keySet())
+        {
+            minHeap.add(new HuffLeafNode(c , freq.getOrDefault(c , 0)));
+        }
+        HuffTree temp1 , temp2 , temp3 = null;
+        while(minHeap.size() > 1)
+        {
+
+            temp1 = (HuffTree) minHeap.poll();
+            temp2 = (HuffTree) minHeap.poll();
+
+            temp3 = new HuffTree(new HuffInternalNode(temp1.root() , temp2.root()));
+
+            minHeap.add(temp3);
+        }
+
+        return temp3;
+    }
+
+    public static void dfs(HuffBaseNode root, String code)
+    {
+        if(root.isLeaf())
+        {
+            id.put(((HuffLeafNode)root).value() , code);
+            return;
+        }
+        dfs(((HuffInternalNode)root).left() , code + "0");
+        dfs(((HuffInternalNode)root).right() , code + "1");
     }
 
 
@@ -75,6 +113,11 @@ public class Main {
         {
             e.printStackTrace();
         }
+
+        HuffTree tree = builtTree();
+        dfs(tree.root() , "");
+
+
 
     }
 }
