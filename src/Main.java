@@ -142,7 +142,6 @@ public class Main {
 
                 // Reading objects in the correct order
                 reverseId = (HashMap<boolean[], Character>) ois.readObject();  // HashMap<boolean[], Character>
-                id = (HashMap<Character, boolean[]>) ois.readObject();  // HashMap<Character, boolean[]>
                 totalNumberOfWords = (Integer) ois.readObject();  // Integer
 
                 try (FileWriter fileWriter = new FileWriter(newFile);
@@ -216,7 +215,6 @@ public class Main {
             try (FileOutputStream fileOut = new FileOutputStream(Output);
                  ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
                 out.writeObject(reverseId);
-                out.writeObject(id);
                 out.writeObject((Integer)totalNumberOfWords);
                 System.out.println(totalNumberOfWords);
                 for (int i = 0; i < totalNumberOfWords; i++) {
