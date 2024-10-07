@@ -216,7 +216,6 @@ public class Main {
                  ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
                 out.writeObject(reverseId);
                 out.writeObject((Integer)totalNumberOfWords);
-                System.out.println(totalNumberOfWords);
                 for (int i = 0; i < totalNumberOfWords; i++) {
                     boolean[] code = id.get((char) content[i]);
                     out.writeObject(code);
