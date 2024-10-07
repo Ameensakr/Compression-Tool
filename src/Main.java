@@ -1,9 +1,6 @@
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.PriorityQueue;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
 
@@ -29,11 +26,11 @@ public class Main {
 
     public static HuffTree builtTree()
     {
-        PriorityQueue minHeap= new PriorityQueue(Comparator.reverseOrder());
+        PriorityQueue<HuffTree> minHeap= new PriorityQueue(Collections.reverseOrder());
 
         for(Character c : freq.keySet())
         {
-            minHeap.add(new HuffLeafNode(c , freq.getOrDefault(c , 0)));
+            minHeap.add(new HuffTree(new HuffLeafNode(c , freq.get(c))));
         }
         HuffTree temp1 , temp2 , temp3 = null;
         while(minHeap.size() > 1)
