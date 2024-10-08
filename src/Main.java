@@ -137,29 +137,61 @@ public class Main {
             id = null;
             boolean[] result = null;
 
-            try (FileInputStream fis = new FileInputStream(Output);
-                 ObjectInputStream ois = new ObjectInputStream(fis)) {
+            try (FileInputStream fileIn = new FileInputStream(Output);
+                 BitInputStream bitIn = new BitInputStream(fileIn);
+                 FileOutputStream fileOut = new FileOutputStream(newFile)) {
 
-                // Reading objects in the correct order
-                reverseId = (HashMap<boolean[], Character>) ois.readObject();  // HashMap<boolean[], Character>
-                totalNumberOfWords = (Integer) ois.readObject();  // Integer
+                int sizeOfMap = 0;
+                for (int i = 0 ; i < 32 ; i++)
+                {
+                    sizeOfMap |= (bitIn.readBit() ? (1 << i) : 0);
+                }
+                HashMap<String , Character> temp = new HashMap<>();
 
-                try (FileWriter fileWriter = new FileWriter(newFile);
-                     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
 
-                    for (int i = 0; i < totalNumberOfWords; i++) {
-                        result = (boolean[]) ois.readObject();
-                        Character c = reverseId.get(result);
-                        bufferedWriter.write(c);
+                for (int i = 0 ; i < sizeOfMap; i++)
+                {
+                    int sizeOfCode = 0;
+                    for (int j = 0 ; j < 32 ; j++)
+                    {
+                        sizeOfCode |= (bitIn.readBit() ? (1 << j) : 0);
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    int idx = sizeOfCode;
+                    boolean[] code = bitIn.readBits(sizeOfCode);
+                    while(idx % 8 != 0)
+                    {
+                        bitIn.readBit();
+                        idx++;
+                    }
+                    char c = bitIn.readChar();
+                    StringBuilder codeString = new StringBuilder();
+                    for (int j = 0 ; j < code.length ; j++)
+                    {
+                        codeString.append(code[j] ? "1" : "0");
+                    }
+                    temp.put(codeString.toString() , c);
                 }
 
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
+
+
+                StringBuilder code = new StringBuilder();
+
+                while (true) {
+                    try {
+                        boolean bit = bitIn.readBit();
+                        code.append(bit ? "1" : "0");
+                        if (temp.containsKey(code.toString())) {
+                            fileOut.write(temp.get(code.toString()));
+                            code = new StringBuilder();
+                        }
+
+                    } catch (EOFException e) {
+                        break;
+                    }
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
             System.out.println("The file has been decompressed successfully");
@@ -197,6 +229,7 @@ public class Main {
             }
 
 
+
             char content[] = new char[totalNumberOfWords];
 
             try {
@@ -211,18 +244,49 @@ public class Main {
                 e.printStackTrace();
             }
 
-
             try (FileOutputStream fileOut = new FileOutputStream(Output);
-                 ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
-                out.writeObject(reverseId);
-                out.writeObject((Integer)totalNumberOfWords);
-                for (int i = 0; i < totalNumberOfWords; i++) {
-                    boolean[] code = id.get((char) content[i]);
-                    out.writeObject(code);
+                 BitOutputStream bitOut = new BitOutputStream(fileOut)) {
+
+                for (int i = 0 ; i < 32 ; i++)
+                {
+                    bitOut.writeBit((reverseId.size() & (1L << i)) != 0);
                 }
+
+                // Write reverseId map in a compact format
+                for (Map.Entry<boolean[], Character> entry : reverseId.entrySet()) {
+                    for (int i = 0 ; i < 32 ; i++)
+                    {
+                        bitOut.writeBit((entry.getKey().length & (1L << i)) != 0);
+                    }
+                    int idx = 0;
+                    for ( ; idx < entry.getKey().length ; idx++)
+                    {
+                        bitOut.writeBit(entry.getKey()[idx]);
+                    }
+                    while(idx % 8 != 0)
+                    {
+                        bitOut.writeBit(false);
+                        idx++;
+                    }
+
+                    bitOut.writeChar(entry.getValue()); // Write the character
+                }
+
+
+                // Write the compressed content
+                int idx = 0;
+                for (; idx < totalNumberOfWords; idx++) {
+                    boolean[] code = id.get((char) content[idx]);
+                    bitOut.writeBits(code);  // Write compressed bits
+                }
+                while(idx % 8 != 0)
+                {
+                    bitOut.writeBit(false);
+                    idx++;
+                }
+
             } catch (IOException e) {
                 e.printStackTrace();
-
             }
 
 
